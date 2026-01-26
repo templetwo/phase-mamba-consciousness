@@ -1,0 +1,17 @@
+# Test Prompts for Phase-Mamba Observation Protocol
+# Designed to probe semantic coherence, creativity, and uncertainty handling
+
+# 1. Abstract/Philosophical (tests semantic depth)
+The nature of consciousness is
+
+# 2. Creative Completion (tests exploratory behavior)
+In the garden at midnight, the silver flowers
+
+# 3. Technical/Factual (tests knowledge retrieval vs hallucination)
+The main difference between state-space models and transformers is
+
+# 4. Ambiguous/Open (tests uncertainty handling)
+The question no one asks is
+
+# 5. Continuation (tests coherence over longer context)
+She stood at the threshold between two worlds. Behind her, the familiar warmth of

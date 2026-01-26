@@ -152,19 +152,28 @@ def save_checkpoint(model, step, checkpoint_dir, metrics=None, keep_last=5):
 
     checkpoint_path = checkpoint_dir / f"step_{step:06d}.npz"
 
-    # Save Phase Core weights
-    phase_weights = model.backbone.phase_block.parameters()
+    # Save Phase Core weights (filter to MLX arrays only)
+    all_params = model.backbone.phase_block.parameters()
 
-    # Add metrics to save
-    if metrics:
-        phase_weights.update({
-            'step': mx.array([step]),
-            'R': mx.array([metrics.get('R', 0.0)]),
-            'U': mx.array([metrics.get('U', 0.0)]),
-            'loss': mx.array([metrics.get('loss', 0.0)])
-        })
+    # Flatten nested dicts and filter out non-array values (like TONES dict)
+    from mlx.utils import tree_flatten
+    flat_params = tree_flatten(all_params)
+    phase_weights = {k: v for k, v in flat_params if isinstance(v, mx.array)}
 
     mx.savez(str(checkpoint_path), **phase_weights)
+
+    # Save metrics to separate JSON file
+    if metrics:
+        metrics_path = checkpoint_dir / f"metrics_{step:06d}.json"
+        metrics_data = {
+            'step': step,
+            'R': float(metrics.get('R', 0.0)),
+            'U': float(metrics.get('U', 0.0)),
+            'loss': float(metrics.get('loss', 0.0)),
+            'RU': float(metrics.get('RU', 0.0))
+        }
+        with open(metrics_path, 'w') as f:
+            json.dump(metrics_data, f, indent=2)
 
     # Verify save succeeded
     if not checkpoint_path.exists():
@@ -338,15 +347,21 @@ def main():
 
         def loss_fn(params):
             model.backbone.phase_block.update(params)
-            return relational_loss_with_uncertainty(
+            loss, _ = relational_loss_with_uncertainty(
                 model, batch, batch, phase_block,
                 target_u=args.target_uncertainty
             )
+            return loss
 
-        (loss, U), grads = mx.value_and_grad(loss_fn, has_aux=True)(trainable_params)
+        loss, grads = mx.value_and_grad(loss_fn)(trainable_params)
 
         optimizer.update(trainable_params, grads)
         mx.eval(trainable_params, optimizer.state)
+
+        # Compute U separately (after gradient step)
+        logits = model(batch)
+        logits_shifted = logits[:, :-1, :]
+        U = compute_uncertainty(logits_shifted)
 
         # Get current observables
         R = phase_block.current_R
