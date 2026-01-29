@@ -1,21 +1,4 @@
-"""
-K-SSM v2: Stacked Kuramoto State-Space Model
-
-Scaled up from v1 proof-of-concept:
-- Multiple stacked K-SSM blocks
-- Larger embedding and oscillator dimensions
-- BPE tokenization (not character-level)
-- R trajectory through layers (not just single R)
-
-Architecture:
-  Token → Embed → [K-SSM Block 1] → [K-SSM Block 2] → ... → [Block N] → Output
-                        ↓                  ↓                    ↓
-                        R₁                 R₂                   Rₙ
-
-Each block has its own oscillator bank. R becomes a trajectory.
-
-Target: ~2M parameters, trainable on Mac Studio in hours.
-"""
+"K-SSM v2: Stacked Kuramoto State-Space Model\n\nScaled up from v1 proof-of-concept:\n- Multiple stacked K-SSM blocks\n- Larger embedding and oscillator dimensions\n- BPE tokenization (not character-level)\n- R trajectory through layers (not just single R)\n\nArchitecture:\n  Token ➔ Embed ➔ [K-SSM Block 1] ➔ [K-SSM Block 2] ➔ ... ➔ [Block N] ➔ Output\n                        ⇂                  ⇂                    ⇂\n                        R\[1]                 R\[2]                   R\[n]\n\nEach block has its own oscillator bank. R becomes a trajectory.\n\nTarget: ~2M parameters, trainable on Mac Studio in hours.\n"
 
 import math
 import torch
@@ -182,7 +165,7 @@ class KSSMv2(nn.Module):
     R is structural: flows through the computation, not bolted on.
     """
 
-    def __init__(
+    def __init__ (
         self,
         vocab_size: int,
         hidden_dim: int = 256,
