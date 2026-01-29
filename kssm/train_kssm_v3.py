@@ -391,16 +391,65 @@ def train_v3(config: V3TrainConfig):
     print("\nTraining Finished.")
 
 if __name__ == "__main__":
-    config = V3TrainConfig()
+
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Train K-SSM v3")
+
+    parser.add_argument("--max-steps", type=int, default=10000)
+
+    parser.add_argument("--resume", action="store_true")
+
+    parser.add_argument("--lambda-reg", type=float, default=0.5)
+
+    parser.add_argument("--batch-size", type=int, default=8)
+
+    parser.add_argument("--lr", type=float, default=4e-4)
+
+    args = parser.parse_args()
+
+
+
+    config = V3TrainConfig(
+
+        max_steps=args.max_steps,
+
+        resume=args.resume,
+
+        lambda_reg=args.lambda_reg,
+
+        batch_size=args.batch_size,
+
+        learning_rate=args.lr
+
+    )
+
+    
+
     lock_manager = LockFileManager(Path(config.output_dir))
+
     if not lock_manager.acquire():
+
         sys.exit(1)
+
+    
+
     setup_logging_v3(Path(config.output_dir))
+
+    
+
     try:
+
         train_v3(config)
+
     except Exception as e:
+
         print(f"Error: {e}")
+
         import traceback
+
         traceback.print_exc()
+
     finally:
+
         lock_manager.release()
