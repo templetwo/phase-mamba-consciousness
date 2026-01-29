@@ -77,8 +77,8 @@ class V3TrainConfig:
     n_harmonics: int = 32
 
     # Data
-    corpus_path: str = "data/processed/kssm_corpus.jsonl"
-    cache_dir: str = "data/cache_v3"
+    corpus_path: str = "kssm/data/processed/kssm_corpus.jsonl"
+    cache_dir: str = "kssm/data/cache_v3"
     seq_length: int = 512
 
     # Training

@@ -26,6 +26,8 @@ from pathlib import Path
 from typing import Optional, Tuple, List, Dict
 import math
 import gc
+import atexit
+import logging
 
 import torch
 import torch.nn as nn
@@ -314,6 +316,92 @@ class CheckpointManager:
         print(f"  Resumed from step {step}")
         return step, history, best_val_loss
 
+
+# ==============================================================================
+# Process Safety (Lockfile)
+# ==============================================================================
+
+class LockFileManager:
+    """
+    Ensures only one training instance runs at a time.
+    Manages a lock file containing the process ID (PID).
+    """
+    def __init__(self, lock_dir: Path):
+        self.lock_dir = lock_dir
+        self.lock_file = lock_dir / "training.lock"
+
+    def acquire(self) -> bool:
+        """Try to acquire lock. Returns True if successful."""
+        self.lock_dir.mkdir(parents=True, exist_ok=True)
+
+        if self.lock_file.exists():
+            # Check if process is actually alive
+            try:
+                with open(self.lock_file, 'r') as f:
+                    old_pid = int(f.read().strip())
+                
+                # Check if PID exists
+                try:
+                    os.kill(old_pid, 0)
+                    print(f"❌ Error: Lock file exists. Training already running (PID {old_pid})")
+                    return False
+                except OSError:
+                    print(f"⚠️  Found stale lock file for PID {old_pid}. Cleaning up...")
+                    self.lock_file.unlink()
+            except (ValueError, ProcessLookupError):
+                print("⚠️  Found corrupted lock file. Cleaning up...")
+                self.lock_file.unlink()
+
+        # Write our PID
+        pid = os.getpid()
+        with open(self.lock_file, 'w') as f:
+            f.write(str(pid))
+        
+        print(f"🔒 Acquired lock (PID {pid})")
+        atexit.register(self.release)
+        return True
+
+    def release(self):
+        """Release lock file."""
+        if self.lock_file.exists():
+            try:
+                with open(self.lock_file, 'r') as f:
+                    pid = int(f.read().strip())
+                # Only delete if it's OUR lock
+                if pid == os.getpid():
+                    self.lock_file.unlink()
+                    print("🔓 Released lock")
+            except:
+                pass
+
+# ==============================================================================
+# Logging
+# ==============================================================================
+
+class DualLogger(object):
+    """Writes to both stdout/stderr and a log file."""
+    def __init__(self, filename):
+        self.terminal = sys.stdout
+        self.log = open(filename, "a", buffering=1) # Line buffered
+
+    def write(self, message):
+        self.terminal.write(message)
+        self.log.write(message)
+
+    def flush(self):
+        self.terminal.flush()
+        self.log.flush()
+
+def setup_logging(output_dir: Path):
+    """Redirects stdout/stderr to both console and file."""
+    output_dir.mkdir(parents=True, exist_ok=True)
+    log_file = output_dir / "training.log"
+    
+    # Redirect stdout and stderr
+    sys.stdout = DualLogger(log_file)
+    sys.stderr = sys.stdout
+    
+    print(f"📝 Logging to {log_file}")
 
 # ==============================================================================
 # Training Functions
@@ -632,12 +720,17 @@ def train(config: TrainConfig):
                 clear_mps_cache()
 
     # Save on interrupt or completion
-    print("\n" + "=" * 70)
+    print("=" * 70)
     if interrupted:
         print("TRAINING INTERRUPTED - Saving state...")
     else:
         print("TRAINING COMPLETE")
     print("=" * 70)
+
+    # Release lock explicitly just in case
+    lock_manager = getattr(config, 'lock_manager', None)
+    if lock_manager:
+        lock_manager.release()
 
     # Final checkpoint
     ckpt_manager.save_checkpoint(
@@ -701,6 +794,27 @@ if __name__ == "__main__":
         output_dir=args.output_dir,
         resume=args.resume
     )
+    
+    # 1. Setup locking
+    lock_manager = LockFileManager(Path(config.output_dir))
+    if not lock_manager.acquire():
+        sys.exit(1)
+    
+    # Attach to config so we can release in train() if needed
+    config.lock_manager = lock_manager
 
-    model, history = train(config)
-    print("\n✅ Done!")
+    # 2. Setup logging
+    # Note: verify_mamba_hf.py pattern
+    setup_logging(Path(config.output_dir))
+
+    try:
+        model, history = train(config)
+        print("\n✅ Done!")
+    except Exception as e:
+        print(f"\n❌ CRITICAL ERROR: {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
+    finally:
+        # Lock is released by atexit, but good practice to be explicit if we can
+        lock_manager.release()
