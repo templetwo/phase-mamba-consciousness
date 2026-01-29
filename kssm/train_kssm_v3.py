@@ -163,6 +163,52 @@ def train_step_v3(model, batch, config, optimizer) -> Dict:
     }
 
 # ==============================================================================
+# Evaluation
+# ==============================================================================
+
+def evaluate_v3(model, val_loader, config, tokenizer) -> Dict:
+    """Run validation and return metrics"""
+    model.eval()
+    total_loss = 0
+    total_ce = 0
+    total_reg = 0
+    R_values = []
+    u_values = []
+    n_batches = 0
+
+    with torch.no_grad():
+        for batch in val_loader:
+            x, y = batch
+            x, y = x.to(config.device), y.to(config.device)
+
+            logits, R_mean, R_all = model(x, return_R=True)
+            ce_loss = F.cross_entropy(logits.view(-1, model.vocab_size), y.view(-1))
+            reg_loss = model.get_regularization_loss()
+
+            total_loss += (ce_loss + config.lambda_reg * reg_loss).item()
+            total_ce += ce_loss.item()
+            total_reg += reg_loss.item()
+            R_values.append(R_mean.mean().item())
+
+            # Get u_val from first block
+            u_values.append(model.blocks[0].oscillators.last_u_val)
+
+            n_batches += 1
+            if n_batches >= 20:  # Limit validation batches for speed
+                break
+
+    model.train()
+
+    return {
+        'val_loss': total_loss / n_batches,
+        'val_ce': total_ce / n_batches,
+        'val_reg': total_reg / n_batches,
+        'val_R': sum(R_values) / len(R_values),
+        'val_u': sum(u_values) / len(u_values) if u_values else 0.0,
+        'val_perplexity': math.exp(min(total_ce / n_batches, 20))  # Cap to avoid overflow
+    }
+
+# ==============================================================================
 # Main Training Loop
 # ==============================================================================
 
@@ -248,6 +294,8 @@ def train_v3(config: V3TrainConfig):
     running_R = 0
     n_running = 0
     accum_step = 0
+    avg_ce = 0.0  # Initialize for eval
+    avg_R = 0.0   # Initialize for eval
 
     while global_step < config.max_steps and not interrupted:
         try:
@@ -282,8 +330,61 @@ def train_v3(config: V3TrainConfig):
                 running_R = 0
                 n_running = 0
 
+            # Evaluation at eval_interval
+            if global_step % config.eval_interval == 0:
+                print("\n" + "=" * 80)
+                print(f"EVALUATION @ Step {global_step}")
+                print("=" * 80)
+
+                val_metrics = evaluate_v3(model, val_loader, config, tokenizer)
+
+                print(f"  Val Loss: {val_metrics['val_loss']:.4f}")
+                print(f"  Val CE: {val_metrics['val_ce']:.4f}")
+                print(f"  Val Perplexity: {val_metrics['val_perplexity']:.2f}")
+                print(f"  Val R: {val_metrics['val_R']:.4f}")
+                print(f"  Val u_val: {val_metrics['val_u']:.4f}")
+
+                # Update history
+                history.append({
+                    'step': global_step,
+                    'train_ce': avg_ce,
+                    'val_loss': val_metrics['val_loss'],
+                    'val_ce': val_metrics['val_ce'],
+                    'val_perplexity': val_metrics['val_perplexity'],
+                    'R_mean': avg_R,
+                    'val_R': val_metrics['val_R'],
+                    'u_val': stats['u_val']
+                })
+
+                # Save best model
+                is_best = val_metrics['val_loss'] < best_val_loss
+                if is_best:
+                    best_val_loss = val_metrics['val_loss']
+                    print(f"  ✓ New best val loss! Saving best_model.pt")
+                    ckpt_manager.save_checkpoint(
+                        model, optimizer, scheduler, global_step, history, best_val_loss,
+                        is_best=True
+                    )
+
+                # Generate sample
+                print("\n  Sample Generation:")
+                sample_text, sample_R = generate_sample(
+                    model, tokenizer, "The ", max_tokens=50,
+                    temperature=0.8, device=config.device, seq_length=config.seq_length
+                )
+                print(f"    Text: {sample_text[:150]}...")
+                if sample_R:
+                    print(f"    R: {sum(sample_R)/len(sample_R):.4f}")
+
+                print("=" * 80)
+                print()
+                clear_mps_cache()
+
+            # Regular checkpoint saving
             if global_step % config.save_interval == 0:
+                print(f"\n💾 Checkpoint @ Step {global_step}")
                 ckpt_manager.save_checkpoint(model, optimizer, scheduler, global_step, history, best_val_loss)
+                print()
                 clear_mps_cache()
 
     ckpt_manager.save_checkpoint(model, optimizer, scheduler, global_step, history, best_val_loss)
