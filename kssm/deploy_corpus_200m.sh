@@ -8,7 +8,7 @@ set -e  # Exit on error
 # Configuration
 REMOTE_USER="tony_studio"
 REMOTE_HOST="192.168.1.195"
-REMOTE_DIR="~/liminal-k-ssm"
+REMOTE_DIR="~/phase-mamba-consciousness"
 REMOTE_ADDR="${REMOTE_USER}@${REMOTE_HOST}"
 
 # Colors for output
