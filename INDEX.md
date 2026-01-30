@@ -53,7 +53,10 @@ ssh tony_studio@192.168.1.195 "cd ~/liminal-k-ssm && bash kssm/check_training_st
 - [train_kssm_v3.py](kssm/train_kssm_v3.py) - Training script with evaluation logic
 - [kssm_v2.py](kssm/kssm_v2.py) - V2 architecture (baseline comparison)
 - [train_kssm_v2_efficient.py](kssm/train_kssm_v2_efficient.py) - V2 training script
-- [build_corpus.py](kssm/build_corpus.py) - 21M token corpus builder
+- [build_corpus.py](kssm/build_corpus.py) - Corpus builder (96 Gutenberg texts)
+
+**Training Data**:
+- **[CORPUS.md](CORPUS.md)** - Complete training data documentation (22.2M tokens, Public Domain)
 
 **Infrastructure**:
 - [monitor_training.py](kssm/monitor_training.py) - Real-time dashboard (1075 lines)

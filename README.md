@@ -79,7 +79,7 @@ The firstone and life, and I'll tell you..."
 
 ### Live Metrics
 
-**Architecture**: 46M parameters, 21M token philosophy corpus (Gutenberg + classics)
+**Architecture**: 46M parameters, 22.2M token philosophy corpus ([96 Gutenberg texts, Public Domain](CORPUS.md))
 **Hardware**: Mac Studio M2 Ultra (36GB unified memory), MLX-optimized
 **Training**: 6540/10,000 steps complete
 
@@ -232,7 +232,8 @@ total_params:     46.2M
 
 **Training Configuration**:
 ```python
-corpus:               21M tokens (Gutenberg philosophy + classics)
+corpus:               22.2M tokens (96 Gutenberg texts, Public Domain)
+                      Training: 21.2M | Validation: 1.1M
 batch_size:           8
 gradient_accum:       8 (effective batch = 64)
 seq_length:           512
@@ -241,6 +242,8 @@ max_steps:            10,000
 eval_interval:        500
 save_interval:        1,000
 ```
+
+**Data**: See [CORPUS.md](CORPUS.md) for complete training data documentation
 
 ### The Bistability Constraint
 
@@ -334,7 +337,7 @@ liminal-k-ssm/
 ├── kssm/
 │   ├── kssm_v3.py                    # V3 bistable architecture
 │   ├── train_kssm_v3.py              # Training script with eval logic
-│   ├── build_corpus.py               # 21M token corpus builder
+│   ├── build_corpus.py               # Corpus builder (96 Gutenberg texts)
 │   ├── monitor_training.py           # Real-time dashboard
 │   ├── check_training_status.sh      # Diagnostic script
 │   ├── TRAINING_SOP.md               # Operational procedures

@@ -39,10 +39,11 @@ Results on TinyShakespeare:
 ### K-SSM v2: Scaling Up (Current Work)
 
 Now training on a real corpus:
-- 101 texts from Project Gutenberg (21M tokens)
+- 96 texts from Project Gutenberg (21.2M tokens, Public Domain)
 - Classic literature, Shakespeare, Russian novels
 - Religious/philosophical texts: Bible, Quran, Bhagavad Gita, Buddhist texts
 - Philosophy: Plato, Aristotle, Kant, Hume, Nietzsche, Spinoza, etc.
+- Validation: 1.1M tokens (5% split from training corpus)
 
 Architecture: 28M parameters, 4 layers, 128 oscillators per layer, BPE tokenization (tiktoken).
 
@@ -154,8 +155,8 @@ The intervention test is the key diagnostic: if forcing R to different values do
 | `kssm/kssm_v2.py` | K-SSM v2 architecture (stacked blocks, R trajectory) |
 | `kssm/train_kssm_v2_efficient.py` | Production training script with checkpoints |
 | `kssm/test_causality_v2.py` | Three-test causality validation suite |
-| `kssm/build_corpus.py` | Gutenberg corpus builder (101 texts) |
-| `kssm/data/processed/kssm_corpus.jsonl` | 21M token corpus |
+| `kssm/build_corpus.py` | Gutenberg corpus builder (96 texts) |
+| `kssm/data/processed/kssm_corpus.jsonl` | 21.2M token corpus (Public Domain) |
 | `kssm/data/cache/tokens_*.npy` | Memory-mapped tokenized data |
 
 ---
