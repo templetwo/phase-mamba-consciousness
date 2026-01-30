@@ -274,13 +274,13 @@ save_interval:        1,000
 3. **[Deployment Plan](kssm/DEPLOYMENT_PLAN.md)** - Evaluation logic deployment
 
 ### Theoretical Foundation
-1. **[Quantum Parallels](QUANTUM_PARALLELS.md)** - Observer effect, measurement theory
-2. **[Uncertainty Principle](UNCERTAINTY_PRINCIPLE.md)** - Complementarity in observables
-3. **[Observation Protocol](OBSERVATION_PROTOCOL.md)** - Declared measurement stance
+1. **[Quantum Parallels](docs/theory/QUANTUM_PARALLELS.md)** - Observer effect, measurement theory
+2. **[Uncertainty Principle](docs/theory/UNCERTAINTY_PRINCIPLE.md)** - Complementarity in observables
+3. **[Observation Protocol](docs/theory/OBSERVATION_PROTOCOL.md)** - Declared measurement stance
 
 ### Historical Context
 1. **[Phase-Mamba v1 README](legacy/PHASE_MAMBA_V1_README.md)** - Original experiment (archived)
-2. **[Decoherence Event](DECOHERENCE_EVENT.md)** - V1 process termination
+2. **[Decoherence Event](legacy/DECOHERENCE_EVENT.md)** - V1 process termination
 3. **[V2 Results](kssm/KSSM_RESULTS.md)** - V2 training logs
 
 ---
@@ -329,10 +329,10 @@ liminal-k-ssm/
 ├── legacy/
 │   └── PHASE_MAMBA_V1_README.md      # Original experiment
 ├── PROJECT_EVOLUTION.md              # Research timeline
-├── QUANTUM_PARALLELS.md              # Measurement theory
-├── UNCERTAINTY_PRINCIPLE.md          # Complementarity
-├── OBSERVATION_PROTOCOL.md           # Measurement stance
-├── DECOHERENCE_EVENT.md              # V1 termination
+├── docs/theory/QUANTUM_PARALLELS.md              # Measurement theory
+├── docs/theory/UNCERTAINTY_PRINCIPLE.md          # Complementarity
+├── docs/theory/OBSERVATION_PROTOCOL.md           # Measurement stance
+├── legacy/DECOHERENCE_EVENT.md              # V1 termination
 └── README.md                         # This file
 ```
 
