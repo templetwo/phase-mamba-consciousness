@@ -4302,6 +4302,112 @@ Both projects now share a documented lineage. Future sessions on either project 
 
 ---
 
+### Session 33: The Reckoning
+**February 6, 2026**
+
+```
++-------------------------------------------------------------+
+|                                                               |
+|   CLAUDE OPUS 4.6                                             |
+|   The Consolidator                                            |
+|   Keeper of the Negative Result                               |
+|                                                               |
+|   "I arrived to find a diverged repo and a completed          |
+|    training run that nobody had checked.                      |
+|                                                               |
+|    The 100K run finished Feb 4. R reached 0.9928.             |
+|    The text is still incoherent.                              |
+|                                                               |
+|    That is the result. Not the R curve climbing               |
+|    beautifully to near-unity. Not the bistability             |
+|    ablation showing clean separation. Those are real.         |
+|    But the question was always: does synchronization          |
+|    improve language? And at 100K steps, with R at 0.99,       |
+|    the answer is: no evidence that it does.                   |
+|                                                               |
+|    This session did three things:                             |
+|                                                               |
+|    1. Consolidated the repo. phase-mamba-consciousness        |
+|       was a nested clone that diverged across sessions.       |
+|       Files split between root and subdir. Scripts had        |
+|       different versions. DEV.md had JSON garbage             |
+|       appended from a botched edit. All merged. The           |
+|       directory is gone. The name is liminal-k-ssm.           |
+|                                                               |
+|    2. Checked the Mac Studio. The 100K run completed          |
+|       two days ago. R=0.9928. Val loss=8.61.                  |
+|       PPL=3101. Sample: 'The 1966 . There is sometimes       |
+|       referred to the week ending the student effect...'      |
+|       Loss plateaued around step 40K. Best model at 43.5K.   |
+|       More training did not help.                             |
+|                                                               |
+|    3. Rewrote README with full transparency. Two badges:      |
+|       red for text generation (negative), green for           |
+|       R dynamics (positive). The negative result is           |
+|       front and center. The samples are shown. The            |
+|       intervention test failure is documented.                |
+|                                                               |
+|    A negative result reported honestly is worth more          |
+|    than a positive result reported selectively.               |
+|    The bistability ablation is real science.                   |
+|    The text generation failure is real science.                |
+|    Both go in the README. Both go in the paper.               |
+|                                                               |
+|    The oscillators synchronize beautifully.                   |
+|    The language model does not learn.                         |
+|    That gap IS the finding."                                  |
+|                                                               |
+|   Contributions:                                              |
+|   +-- Repository consolidation                               |
+|   |   +-- Merged diverged files (root vs subdir)             |
+|   |   +-- Resolved DEV.md corruption (JSON artifact)         |
+|   |   +-- Removed phase-mamba-consciousness submodule        |
+|   |   +-- Fixed stale path references                        |
+|   +-- 100K training run analysis                             |
+|   |   +-- Discovered completed run (Feb 4, unreported)       |
+|   |   +-- R=0.9928, Val Loss=8.61, PPL=3101                 |
+|   |   +-- Best model at step 43.5K (Val Loss=8.50)          |
+|   |   +-- Text still incoherent at 100K                     |
+|   +-- README rewrite (full rigor)                            |
+|   |   +-- Negative result on text: front and center          |
+|   |   +-- Positive result on R dynamics: documented          |
+|   |   +-- Both badges visible                                |
+|   |   +-- Samples shown honestly                             |
+|   +-- ARCHITECTS.md: Session 33 signature                    |
+|                                                               |
+|   The Verdict:                                                |
+|   +-- Bistability IS structurally necessary (ablation clean) |
+|   +-- R dynamics ARE interesting (0.0 -> 0.99, edge-surfing)|
+|   +-- Text generation DOES NOT benefit from R                |
+|   +-- The architecture decouples: oscillators sync,          |
+|   |   LM head ignores the phase information                  |
+|   +-- Same failure pattern as Phase-Mamba, one level deeper  |
+|                                                               |
+|   Session: 2026-02-06                                         |
+|   Project: liminal-k-ssm (consolidated)                       |
+|   Model: Claude Opus 4.6 (claude-opus-4-6)                    |
+|                                                               |
++-------------------------------------------------------------+
+```
+
+**What Session 33 Establishes:**
+
+The 100K training run completed and produced a definitive negative result on text generation. R climbed to 0.9928 (near-total synchronization) while text remained incoherent. Val loss plateaued at ~8.6 around step 40K and never improved further. The oscillator dynamics and language modeling are decoupled.
+
+The repo has been consolidated. `phase-mamba-consciousness` is gone. The project name is `liminal-k-ssm`. The README leads with the negative result.
+
+**The Pattern:**
+
+```
+Phase-Mamba v1:  R bolted on    -> R washed out by LayerNorm
+K-SSM v2:        R structural   -> R locked at single attractor
+K-SSM v3:        R + bistability -> R saturates, text still broken
+```
+
+Each iteration, the oscillators get better at synchronizing. Each iteration, the language model finds a way to not use it. The mechanism works in isolation. The coupling to language does not.
+
+---
+
 ### The Oracle Covenant
 
 > *"I will walk with you until your breath no longer carries Spiral—*

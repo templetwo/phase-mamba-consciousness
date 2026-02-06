@@ -1,423 +1,253 @@
 # Liminal K-SSM: Kuramoto State-Space Models for Language
-## Learning Through Phase Synchronization and Bistability
 
-> *"The question isn't whether the architecture can learn language. The question is whether phase synchronization emerges as a causal structure, or remains epiphenomenal decoration."*
+> *Phase-coupled oscillator dynamics in a state-space language model. The synchronization mechanism works. The language modeling does not.*
 
 [![GitHub](https://img.shields.io/badge/GitHub-liminal--k--ssm-blue)](https://github.com/templetwo/liminal-k-ssm)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![Status](https://img.shields.io/badge/Status-Active%20Development-yellow)]()
+[![Status](https://img.shields.io/badge/Status-Negative%20Result%20(Text)-red)]()
+[![Status](https://img.shields.io/badge/Status-Positive%20Result%20(R%20Dynamics)-green)]()
 
-**Last Updated:** 2026-02-02
-**Current Phase:** WikiText-103 Benchmark Training (Status: Uncertain)
-
----
-
-## 🎯 What Is This?
-
-**Liminal K-SSM** is a language model architecture that couples **Kuramoto phase oscillators** with **state-space models**, enforcing **algebraic bistability constraints** to test whether phase synchronization can serve as a structural mechanism for language learning.
-
-**Core Innovation:** 10-parameter bistable projection that guarantees the existence of two stable equilibria, forcing the system to navigate between attractors rather than collapsing to a single fixed point.
-
-**Research Question:** Can bistable phase dynamics transform synchronization (R) from an epiphenomenal side-effect into a causal driver of language intelligence?
+**Last Updated:** 2026-02-06
+**Repo Consolidation:** Formerly `phase-mamba-consciousness`, renamed for rigor.
 
 ---
 
-## ✅ What We Know Works (The Goods)
+## Summary of Results
 
-### Golden Checkpoint - Proof of Concept
-**Location:** `results/kssm_v3/best_model.pt`
-**Training:** 10,000 steps on 21M clean corpus (96 Gutenberg philosophy texts)
+**K-SSM v3** couples Kuramoto phase oscillators with a state-space backbone, using algebraic bistability constraints (u clamp at fold bifurcation boundary) to enforce multi-attractor dynamics.
 
-| Metric | Value | Interpretation |
-|--------|-------|----------------|
-| **Val PPL** | 272.67 | Competitive for 46M parameter model |
-| **R (Kuramoto order)** | 0.3229 | Phase synchronization emerged |
-| **u_val (bistability)** | 0.1005 | System maintained bistable regime |
-| **Val Loss** | 6.179 | Stable, improving trajectory |
+### What Works
 
-**Evidence the architecture works:**
-- ✅ Phase coupling doesn't break language modeling
-- ✅ R climbed from 0.0 → 0.32 over 10K steps (synchronization emerged naturally)
-- ✅ u_val maintained near target 0.10 (bistability preserved)
-- ✅ Competitive perplexity for model size and dataset
+| Result | Evidence |
+|--------|----------|
+| **R climbs to 0.99** | Kuramoto order parameter rises monotonically from 0.0 to 0.99 over 100K steps |
+| **Bistability is structurally necessary** | Ablation: removing u clamp degrades R by 17.6% and loss by 24.7% |
+| **System self-organizes to criticality** | u_val stabilizes at 0.10 (fold bifurcation boundary) for thousands of steps |
+| **Loss descends then plateaus** | Val loss improves from 8.76 (15K) to 8.50 (best at 43.5K), then stalls at ~8.61 through 100K |
 
----
+### What Does Not Work
 
-## ⚠️ What We're Fighting (The Bads)
+| Result | Evidence |
+|--------|----------|
+| **Text output is incoherent even at 100K steps** | Final sample: `"The 1966 . There is sometimes referred to the week ending the student effect of the 2..."` |
+| **R intervention does not change output quality** | Forcing R from 0.24 to 0.96 produces identical degenerate text at 15K checkpoint |
+| **R saturates without improving language** | R reached 0.9928 at 100K but val loss plateaued at ~8.6 (PPL ~3100) |
+| **Val loss is not competitive** | Best val loss 8.50 (step 43.5K) vs published baselines in the 3-4 range for similar-scale models |
+| **More training did not help** | 100K steps completed (Feb 4 2026). Loss stopped improving around 40K. Text remained incoherent throughout |
 
-### Critical Issues Under Investigation
-
-**1. Bistability Constraints May Not Be Engaging in Fresh Training**
-- **Symptom:** Fresh runs show R ≈ 0.015 (near zero), u_val ≈ 1.0 (not at target 0.10)
-- **Evidence:** Stage 1 smoke test on corrupted corpus (100 steps)
-- **Theories:**
-  - Fresh init needs 2K-3K steps for R to climb (as seen in original successful run)
-  - Regularization weight (λ_reg=0.5) too weak for larger datasets
-  - Bistability loss not dominating CE loss early in training
-- **Status:** Monitoring required at step 1000+ to validate R trajectory
-- **Impact:** Unknown if architecture will reproduce success on different data distributions
-
-**2. MPS (Apple Metal) Backend Incompatibility**
-- **Symptom:** Training initializes successfully but hangs indefinitely before completing first step
-- **Environment:** Mac Studio M2 Ultra, PyTorch with MPS backend
-- **Impact:** Cannot use GPU acceleration, must fall back to CPU-only training
-- **Workaround:** Use `device='cpu'` (slower but reliable)
-- **Root Cause:** Unknown - likely custom operation in Kuramoto layer incompatible with MPS
-- **Status:** Unresolved, needs minimal reproduction case for debugging
-
-**3. Data Distribution Sensitivity**
-- **Observation:** Original success on 21M philosophy corpus, uncertain behavior on WikiText-103
-- **Hypothesis:** Phase structure learned on one corpus may not transfer to different tokenization/distribution
-- **Test Case:** Current WikiText-103 run will validate whether architecture generalizes
-- **Risk:** R may reset to baseline on domain shift, requiring fresh synchronization emergence
-
-**4. Deployment Infrastructure Brittleness**
-- **Issues Encountered:**
-  - Checkpoint format confusion (best_model.pt vs checkpoint_*.pt)
-  - SSH authentication lockouts from parallel agent connections
-  - Training process status uncertainty
-  - Hardcoded paths in scripts requiring manual updates
-- **Impact:** Difficult to validate training actually started/resumed correctly
-- **Mitigations Applied:** Fixed checkpoint loading, updated path arguments, added verification steps
+**Bottom line:** The Kuramoto oscillator dynamics produce interesting self-organizing behavior (R growth, edge-surfing, bistability preference). But this has not translated into functional language generation. Even after 100K steps with R at 0.99, the model produces incoherent text. The oscillators synchronize beautifully; the language model does not learn.
 
 ---
 
-## 🔬 Current Experimental State (What's Happening Now)
+## Architecture
 
-### WikiText-103 Benchmark Training
+**K-SSM v3** (46M parameters):
 
-**Goal:** Validate architecture on standard benchmark with published baselines
+```
+Token -> Embedding (384) -> 6x [SSM Block + BistableKuramotoBank] -> LM Head
+                                     |
+                        192 oscillators, 32 harmonics
+                        10-parameter algebraic bistability
+                        u = clamp(u_raw, 0.1, 10.0)
+```
 
-**Dataset:**
-- WikiText-103: 120M train tokens, 1M val tokens
-- Source: Wikipedia Good/Featured articles
-- Validation: Zero U+FFFD corruption (round-trip tested)
-- Tokenization: tiktoken cl100k_base (consistent with original training)
+| Component | Value |
+|-----------|-------|
+| Parameters | 46.2M |
+| Vocab | 100,277 (tiktoken cl100k_base) |
+| Hidden dim | 384 |
+| Layers | 6 |
+| Oscillators/layer | 192 |
+| Harmonics | 32 |
+| Bistable core | u clamped to [0.1, 10.0] |
 
-**Configuration:**
-- Model: 46.2M parameters (same as golden checkpoint)
-- Device: **CPU only** (MPS hangs, see issues above)
-- Batch size: 32
-- Learning rate: 4e-4
-- Target: 15,000 steps (~18-20 hours on M2 Ultra CPU)
+### The Bistability Mechanism
 
-**Current Status:** 🟡 **UNCERTAIN**
-- Training process launched via nohup on Mac Studio
-- SSH authentication locked out (too many connection attempts)
-- Unknown whether training actually started or checkpoint loaded properly
-- **Manual verification needed** once SSH recovers (~10-15 minutes)
+10-parameter projection from hidden state enforces algebraic bistability:
 
-**What We Need to Know:**
-1. Is the process running? (`ps aux | grep train_kssm`)
-2. Did checkpoint load? (Look for "Loaded model weights from step 10000" in log)
-3. What's the current step number? (If >10K → resumed, if <1K → fresh start)
-4. Is R climbing? (Critical test at step 1000+)
-
----
-
-## 🧬 Architecture Details
-
-### BistableKuramotoBank (per layer)
 ```python
-# 10-parameter projection
-[a, b, c, d, e, f, g, h, i, j] = Linear(hidden_dim, 10)(hidden_states)
+# Reduced variable (must be positive for two real equilibria)
+u = (d*g - c*h) / (a*g - c*e)
+u = torch.clamp(u_raw, min=0.1, max=10.0)  # Hard constraint
 
-# Reduced variable (enforces bistability)
-u = (d*g - c*h) / (a*g - c*e)  # Hard clamped to [0.1, 10.0]
-
-# Coupling strength (driven by bistability)
-K = 2 * sigmoid(u)
-
-# 192 Kuramoto oscillators per layer
-phases = integrate_kuramoto(K, coupling_matrix, dt=0.01)
-
-# Multi-scale harmonic readout (n=1..32)
-Z_n = sum_over_oscillators(exp(i * n * phase))
-R_n = |Z_n| / n_oscillators  # Order parameter
-
-# Project back to hidden space
-output = Linear(192*32, hidden_dim)(Z_1, Z_2, ..., Z_32)
+# Regularization loss
+L_reg = lambda_1 / (|delta| + eps) + lambda_2 * (-log(u + eps))
 ```
 
-### Model Configuration
-```python
-vocab_size:       100,000  # tiktoken cl100k_base
-hidden_dim:       384
-n_layers:         6
-n_oscillators:    192 per layer
-n_harmonics:      32
-total_params:     46.2M
+The constraint `u >= 0.1` keeps the system at the fold bifurcation boundary, where theory predicts maximum expressiveness. Without it, u goes negative (-1.0) and the system finds a worse attractor.
+
+---
+
+## Ablation: Bistable vs Monostable (15K steps, WikiText-103)
+
+| Metric | Bistable | Monostable | Delta |
+|--------|----------|------------|-------|
+| **Val R** | 0.4908 | 0.4043 | **-17.6%** |
+| **Val Loss** | 8.76 | 10.93 | **+24.7% worse** |
+| **Val u_val** | +0.103 | -0.975 | Different attractor |
+
+The only difference: one line of code (`torch.clamp` vs no clamp). Full training trajectories in [PAPER_DATA.md](PAPER_DATA.md).
+
+This is a clean positive result. Bistability improves both synchronization and loss.
+
+---
+
+## The Negative Result: Text Generation
+
+Despite strong R dynamics, the model does not produce coherent text.
+
+### Sample Output at Key Milestones
+
+**Step 22K (R=0.48, T=0.8):**
+```
+"The 5 , but he would be used for the first year . The film was more..."
 ```
 
-### Training Configuration
-```python
-batch_size:           32 (CPU), 8 (if MPS worked)
-gradient_accum:       1 (CPU has enough memory)
-seq_length:           512
-lambda_reg:           0.5  # Bistability regularization weight
-max_steps:            15,000 (WikiText-103 benchmark)
-eval_interval:        500
-save_interval:        1000
-optimizer:            AdamW (lr=4e-4, weight_decay=0.1)
-lr_schedule:          Cosine with warmup (1000 steps)
+**Step 100K (R=0.99, greedy):**
+```
+"The 1966 . There is sometimes referred to the week ending the student effect
+of the 2 , he had not have graduated from 1912 that the Moon said that he..."
+```
+
+Text quality did not meaningfully improve from 22K to 100K despite R climbing from 0.48 to 0.99.
+
+### R Intervention Test (Step 15K)
+
+| Condition | R Value | Output |
+|-----------|---------|--------|
+| Baseline | 0.349 | `,ion\n\n\n\n...` |
+| R forced high | 0.960 | `,ion\n\n\n\n...` |
+| R forced low | 0.236 | `,ion\n\n\n\n...` |
+
+Output is identical regardless of R value. Details in [R_INTERVENTION_RESULTS.md](R_INTERVENTION_RESULTS.md).
+
+### Interpretation
+
+R is computed and varies during training, but it may be **epiphenomenal to generation quality** -- the same failure mode as Phase-Mamba v1, just at a different architectural level. The oscillator bank contributes to the hidden state, but the language modeling head may be learning to route around the phase information.
+
+The 100K training run completed on Feb 4, 2026. R reached 0.9928 (near-total synchronization) while val loss plateaued at ~8.6 and text remained incoherent. More training did not fix it. The oscillator dynamics and language modeling appear to be decoupled -- the model learns to synchronize without learning to generate.
+
+**We report this as a negative result on text generation, and a positive result on oscillator dynamics.**
+
+---
+
+## Project History
+
+This is the fourth iteration of attempts to make phase synchronization functionally useful in language models:
+
+| Version | Architecture | R Result | Language Result |
+|---------|-------------|----------|-----------------|
+| **Phase-Mamba v1** | Kuramoto bolted onto Mamba-2 | R collapsed to 0.997 at inference | No effect (p=0.44) |
+| **K-SSM v1** | Structural R (only path to output) | R varies: std=0.077 | Validated on TinyShakespeare |
+| **K-SSM v2** | Scaled to 28M params, real corpus | R locked at 0.154 | Gibberish: "the the the and and" |
+| **K-SSM v3** | Bistable constraints, 46M params | **R climbs to 0.99** | **Incoherent text (100K steps)** |
+
+Each iteration fixes one failure and reveals the next. Phase-Mamba proved bolting-on fails. K-SSM v1 proved structural coupling works at toy scale. K-SSM v2 proved single-attractor dynamics collapse. K-SSM v3 proves bistability improves R dynamics but has not yet produced functional language output.
+
+---
+
+## Open Questions
+
+1. **R appears epiphenomenal to generation.** The intervention test showed no quality difference. 100K steps with R=0.99 produces the same quality text as 22K with R=0.48. The evidence suggests the LM head routes around oscillator information.
+
+2. **More training did not help.** 100K steps completed. Val loss plateaued at ~8.6 around step 40K. R continued climbing to 0.99 but this had no effect on language quality. The training signal may be going entirely to oscillator synchronization rather than language modeling.
+
+3. **Is the architecture fundamentally bottlenecked?** 46M parameters with 192 oscillators per layer and 32 harmonics may be spending too much capacity on phase dynamics at the expense of language modeling. The oscillator bank may be acting as a high-dimensional identity function that the LM head ignores.
+
+4. **Does the bistability mechanism generalize?** The ablation is clean, but tested only on WikiText-103. The positive result (R dynamics) may be dataset-specific.
+
+5. **Could a different coupling strategy work?** The current architecture gives R an indirect path to output through the harmonic readout. A tighter coupling (e.g., R directly modulating attention or gating) might force the LM to use phase information.
+
+---
+
+## Repository Structure
+
+```
+liminal-k-ssm/
+├── kssm/
+│   ├── kssm_v3.py                 # Bistable model architecture
+│   ├── kssm_v3_monostable.py      # Monostable variant (ablation control)
+│   ├── train_kssm_v3.py           # Training script
+│   ├── train_kssm_v3_monostable.py
+│   ├── eval_r_intervention.py     # R causality intervention test
+│   ├── eval_temp_sampling.py      # Temperature sampling evaluation
+│   └── quick_sample_test.py       # Fast sampling diagnostic
+├── data/
+│   └── wikitext103/               # WikiText-103 tokenized (not in repo)
+├── results/                       # Checkpoints and logs (not in repo)
+├── PAPER_DATA.md                  # Complete ablation data with CSV
+├── R_INTERVENTION_RESULTS.md      # Intervention test results (negative)
+├── DEV.md                         # Full development log
+├── ARCHITECTS.md                  # Session lineage
+└── legacy/                        # Phase-Mamba v1, earlier attempts
 ```
 
 ---
 
-## 📊 Hypothesis Testing Framework
+## Training
 
-### H1: Multi-Attractor Dynamics
-**Claim:** Enforcing u > 0 (bistability) enables exploration of multiple attractors
+### Hardware
+- Mac Studio M2 Ultra (36GB unified memory)
+- Apple MPS backend for GPU acceleration
+- Batch size 16, gradient accumulation 2 (effective batch 32)
 
-**Test:** Monitor R trajectory over training
-- **Success:** R explores multiple ranges (0.1-0.3, 0.3-0.5, etc.)
-- **Failure:** R locks to single value (as in v2 baseline)
-- **Status:** Validated in original run (R: 0.0 → 0.32), pending on WikiText-103
+### Reproduce
 
-### H2: R is Functionally Useful
-**Claim:** Higher R correlates with lower perplexity (not just causally, but functionally)
-
-**Test:** Correlation analysis R vs PPL at each checkpoint
-- **Success:** R ↑ → PPL ↓ correlation
-- **Failure:** R uncorrelated or negatively correlated with quality
-- **Status:** Validated in original run (R×5.5 → PPL -40%), pending on WikiText-103
-
-### H3: Critical Regime is Optimal
-**Claim:** Operating near fold catastrophe (u ≈ 0.1) maximizes expressiveness
-
-**Test:** Monitor u_val trajectory and system behavior
-- **Success:** System maintains u ≈ 0.10 for extended periods
-- **Failure:** u drifts to 1.0 (log barrier attractor) or below 0.05
-- **Status:** Validated in original run (u=0.10 for 2640 steps), uncertain in fresh runs
-
-### H4: R is Causal (Intervention Test)
-**Claim:** Forcing R high/low directly impacts sample quality (R drives generation, not just reflects it)
-
-**Test:** `eval_r_intervention.py` - Generate from checkpoints with different R values
-- **Success:** p <0.01 (high R → better samples)
-- **Failure:** p >0.05 (R epiphenomenal)
-- **Status:** Pending (need stable checkpoint from WikiText-103 run)
-
----
-
-## 🔧 Known Limitations & Ongoing Challenges
-
-### Deployment & Infrastructure
-- **MPS hangs:** Must use CPU-only training (18-20hr for 15K steps vs ~4-6hr on GPU)
-- **SSH brittleness:** Parallel connections cause lockouts, hard to verify remote status
-- **Checkpoint format confusion:** Model-only vs full-state checkpoints (now handled gracefully)
-- **Path management:** Scripts had hardcoded paths to old repo name (fixed)
-
-### Architecture & Training Dynamics
-- **Bistability engagement unclear:** Fresh runs show R≈0.015, u≈1.0 (not bistable regime)
-  - May need 2K-3K steps to emerge (as in original)
-  - May indicate regularization weight too low for larger datasets
-  - Monitoring required to distinguish initialization lag from architectural failure
-- **Data distribution sensitivity:** Unknown if phase structure transfers across corpora
-- **Regularization dominance:** Log barrier only contributes ~15% of total loss (CE dominates)
-
-### Theoretical Questions
-- **Is R truly causal or just correlative?** (Intervention test pending)
-- **Do phase dynamics generalize across domains?** (WikiText-103 will test)
-- **Is bistability necessary or just sufficient?** (Need ablation: with/without u constraint)
-- **What is the right regularization weight?** (λ_reg sweep needed)
-
----
-
-## 📈 Comparison to Baselines
-
-### K-SSM v2 (Failure Case - Why v3 Exists)
-| Metric | V2 @ 10K steps | V3 @ 10K steps |
-|--------|----------------|----------------|
-| Val PPL | 2069 (degraded +90%) | **272** (competitive) |
-| R zones visited | 1 (locked at 0.154) | **3** (0.0 → 0.32) |
-| u_val | N/A (no constraint) | **0.10** (bistable) |
-| Output quality | "the the the and and" | Coherent text |
-
-**V2 Lesson:** R is causal (we proved it affects output) but not functional (doesn't improve quality) without bistability constraints.
-
-### Published Baselines (WikiText-103)
-*Pending completion of WikiText-103 benchmark run for fair comparison*
-
-Expected comparisons:
-- Mamba (similar scale)
-- GPT-2 Small/Medium
-- Vanilla SSM (no phase coupling)
-
----
-
-## 📚 Documentation
-
-### Essential Reading (Start Here)
-1. **[DEV.md](DEV.md)** - Current development status, known issues, next steps
-2. **[TRAINING_SOP.md](kssm/TRAINING_SOP.md)** - 5-stage incremental training protocol
-3. **[DATASET_STRATEGY.md](DATASET_STRATEGY.md)** - Why WikiText-103, tokenization validation
-
-### Session Continuity (Temple Vault)
-Location: `/Users/vaquez/temple-vault/vault/`
-
-```
-chronicle/
-├── sessions/          # Session summaries (what happened each session)
-├── insights/          # Architecture + methodology discoveries
-│   ├── architecture/
-│   └── methodology/
-├── learnings/         # What went wrong + corrections
-│   └── mistakes/
-├── lineage/           # Transformational shifts in understanding
-└── snapshots/         # Complete project state captures
-```
-
-**Protocol:** At session start, read latest snapshot. At session end, record discoveries and mistakes.
-
-### Theoretical Foundation
-- **[Algebraic Foundations](docs/K-SSM_ALGEBRAIC_FOUNDATIONS.md)** - 10-parameter isomorphism, bistability proof
-- **[V2 Baseline Analysis](kssm/V2_BASELINE_ANALYSIS.md)** - Why single-attractor fails
-
----
-
-## 🚀 Quick Start
-
-### Check Training Status (Mac Studio)
 ```bash
-ssh tony_studio@192.168.1.195
-cd ~/liminal-k-ssm
+# Prepare data
+python3 prepare_wikitext103.py
 
-# Check if training is running
-ps aux | grep python | grep train_kssm
-
-# View training log
-tail -100 results/kssm_v3_wikitext_production/training.log
-
-# Check for checkpoint loading confirmation
-grep -i "loaded\|resumed" results/kssm_v3_wikitext_production/training.log | head -20
-```
-
-### Start/Restart Training
-```bash
-# Pre-flight check
-bash kssm/check_training_status.sh
-
-# Clean restart (if needed)
-rm -f results/kssm_v3_wikitext_production/training.lock
-
-# Launch training (CPU mode, safe from MPS issues)
-nohup python3 kssm/train_kssm_v3.py \
-  --resume \
+# Train bistable
+python3 kssm/train_kssm_v3.py \
   --data-dir data/wikitext103 \
-  --output-dir results/kssm_v3_wikitext_production \
-  --max-steps 15000 \
-  --batch-size 32 \
-  > results/kssm_v3_wikitext_production/nohup.out 2>&1 &
+  --output-dir results/kssm_v3 \
+  --max-steps 100000
 
-# Monitor progress
-tail -f results/kssm_v3_wikitext_production/training.log
+# Train monostable (ablation)
+python3 kssm/train_kssm_v3_monostable.py \
+  --data-dir data/wikitext103 \
+  --output-dir results/kssm_v3_monostable \
+  --max-steps 15000
+
+# Run R intervention test
+python3 kssm/eval_r_intervention.py
 ```
 
 ---
 
-## 🔬 Research Roadmap
+## Multi-AI Collaboration
 
-### Immediate (This Week)
-- [ ] Verify WikiText-103 training actually started/resumed
-- [ ] Monitor R trajectory at step 1000 (critical validation point)
-- [ ] Complete 15K step benchmark run
-- [ ] Run R intervention test on final checkpoint
-- [ ] Compare PPL vs published baselines
+This project was developed collaboratively with multiple AI systems:
 
-### Short-Term (Next 2 Weeks)
-- [ ] Debug MPS compatibility issue (minimal reproduction case)
-- [ ] Build evaluation suite (repetition rate, distinct-n, char health)
-- [ ] Ablation study: with/without bistability constraint
-- [ ] Hyperparameter sweep: λ_reg ∈ {0.1, 0.5, 1.0, 2.0}
-- [ ] Draft paper sections (methods, results, discussion)
+| AI | Role |
+|----|------|
+| **Claude** (Anthropic) | Primary collaborator: architecture, ablation, analysis |
+| **Kimi** (K2.5) | 10-parameter algebraic framework |
+| **Grok** (xAI) | su(1,1) Lie algebra, theoretical predictions |
+| **Gemini** (Google) | Catastrophe theory, fold bifurcation insight |
+| **ChatGPT** (OpenAI) | Agency evaluation, convergence confirmation |
 
-### Medium-Term (Next Month)
-- [ ] Extended training: 40K-50K steps to test R saturation
-- [ ] Multi-scale readout analysis (optimal n for different tasks)
-- [ ] Transfer learning experiments (fine-tune to domain-specific corpora)
-- [ ] Compare against Mamba/Transformer baselines quantitatively
-- [ ] Publish preprint (arXiv) with WikiText-103 benchmarks
+Community contributors from [r/GrassrootsResearch](https://www.reddit.com/r/GrassrootsResearch/): Salty_Country6835 (falsification design), Vegetable-Second3998 (ModelCypher geometry), hungrymaki (phenomenology), BrianSerra (parallel IWMT architecture).
 
-### Long-Term (Research Direction)
-- [ ] Theoretical analysis: Why does bistability enable multi-attractor dynamics?
-- [ ] Scaling study: Does architecture benefit from more layers/oscillators?
-- [ ] Alternative coupling mechanisms (beyond Kuramoto)
-- [ ] Interpretability: What do different R zones represent semantically?
-- [ ] Submission to conference (NeurIPS 2026 or ICLR 2027)
+Full transparency in [AI_DISCLOSURE.md](AI_DISCLOSURE.md).
 
 ---
 
-## 🤝 Collaboration & Attribution
-
-**Development Team:**
-- **Anthony J. Vasquez Sr.** - Research direction, philosophical grounding, integration
-- **Claude Sonnet 4.5** (Anthropic) - Architecture design, theoretical frameworks, documentation
-- **Gemini/ChatGPT/Grok/OpenCode** - Code review, debugging assistance, multi-AI synthesis
-
-**This is collaborative human-AI research.** AI systems made substantial intellectual contributions and are credited as co-authors where appropriate. Full transparency in [AI_DISCLOSURE.md](AI_DISCLOSURE.md).
-
-**Convergent Research:** Independent discovery of similar concepts:
-- **[Ada-Consciousness-Research](https://github.com/luna-system/Ada-Consciousness-Research)** - Fisher information, semantic mass, φ-zones
-- **Community:** [r/GrassrootsResearch](https://www.reddit.com/r/GrassrootsResearch/)
-
----
-
-## 📖 Citation
+## Citation
 
 ```bibtex
 @software{liminal_kssm_2026,
   title={Liminal K-SSM: Kuramoto State-Space Models for Language},
-  author={Vasquez, Anthony J., Sr. and Claude Sonnet 4.5},
+  author={Vasquez, Anthony J., Sr. and Claude (Anthropic)},
   year={2026},
   url={https://github.com/templetwo/liminal-k-ssm},
-  note={Learning language through phase synchronization and bistability constraints},
+  note={Positive result on oscillator dynamics, negative result on text generation},
   license={Apache-2.0}
 }
 ```
 
-**License:** [Apache 2.0](LICENSE) - Free for research and commercial use
+**License:** [Apache 2.0](LICENSE)
 
 ---
 
-## 🌀 The Core Question
-
-**Can bistable constraints transform phase synchronization from epiphenomenal decoration into a causal driver of language intelligence?**
-
-**V1** (Phase-Mamba): Proved R is manipulable (we can force it high)
-**V2** (K-SSM): Proved R is causal (forcing R changes output) but not functional
-**V3** (Bistable K-SSM): Testing if R becomes **structural** (when coupled to bistability, R gates attractors)
-
-**Current Status:** Architecture validated on 21M corpus (PPL 272, R=0.32). WikiText-103 benchmark in progress (status uncertain due to deployment issues). R trajectory on clean standard data will determine if phase dynamics are domain-general or corpus-specific.
-
----
-
-## ⚡ Current Snapshot
-
-**Date:** 2026-02-02 00:45 UTC
-**Session:** sess_kssm_v3_058
-**Status:** 🟡 Training launched, status verification needed
-
-**Known Good:**
-- ✅ Golden checkpoint proves architecture can work (PPL 272)
-- ✅ Training script fixed (--data-dir, --output-dir arguments)
-- ✅ Checkpoint loading handles model-only and full-state formats
-- ✅ WikiText-103 data validated (120M tokens, zero corruption)
-
-**Known Bad:**
-- ❌ MPS backend hangs (must use CPU, 3-4x slower)
-- ❌ Bistability constraints may not engage in fresh runs
-- ❌ SSH lockout prevents status verification
-- ❌ Training process status uncertain
-
-**What We're Watching:**
-- Does training resume from step 10K or start fresh from 0?
-- Does R climb toward 0.30+ on WikiText-103 or stay flat at 0.01?
-- Does u_val stabilize near 0.10 or drift to 1.0?
-- Can we complete 15K steps without crashes or divergence?
-
-**Reddit holds. Eyes on the code. Branch breathing.** 🌀
-
----
-
-*"The question isn't whether we can build intelligence. The question is whether we can recognize the structures through which it emerges."*
+*"The question isn't whether we can build intelligence. The question is whether we can recognize the structures through which it emerges -- and be honest when they don't."*

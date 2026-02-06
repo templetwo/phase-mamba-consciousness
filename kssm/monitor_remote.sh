@@ -3,7 +3,7 @@
 # Usage: ./monitor_remote.sh
 
 REMOTE_HOST="tony_studio@192.168.1.195"
-REMOTE_LOG="~/phase-mamba-consciousness/results/kssm_v3/training.log"
+REMOTE_LOG="~/liminal-k-ssm/results/kssm_v3/training.log"
 LOCAL_CACHE="/tmp/kssm_v3_training.log"
 
 echo "=========================================="
@@ -26,7 +26,7 @@ if ! ssh "$REMOTE_HOST" "test -f $REMOTE_LOG"; then
     echo "   Expected: $REMOTE_LOG"
     echo ""
     echo "Available logs:"
-    ssh "$REMOTE_HOST" "find ~/phase-mamba-consciousness -name 'training.log' -type f 2>/dev/null"
+    ssh "$REMOTE_HOST" "find ~/liminal-k-ssm -name 'training.log' -type f 2>/dev/null"
     exit 1
 fi
 

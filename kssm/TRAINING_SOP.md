@@ -620,7 +620,7 @@ ssh tony_studio@192.168.1.195 "df -h ~"
 From your local machine:
 
 ```bash
-cd ~/phase-mamba-consciousness
+cd ~/liminal-k-ssm
 
 # Run automated deployment (includes backups)
 ./kssm/deploy_corpus_200m.sh

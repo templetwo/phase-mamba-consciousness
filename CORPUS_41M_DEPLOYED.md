@@ -27,14 +27,14 @@
 
 **Backups** (original 22M safe):
 ```
-~/phase-mamba-consciousness/
+~/liminal-k-ssm/
   kssm/data/processed/kssm_corpus_22M_backup.jsonl (93 MB)
   data/cache_v3_22M_backup/ (original tokens)
 ```
 
 **New corpus** (41M ready):
 ```
-~/phase-mamba-consciousness/
+~/liminal-k-ssm/
   kssm/data/processed/kssm_corpus_200m.jsonl (154.5 MB)
   data/cache_v3_200m/
     tokens_train.npy (148.2 MB, 38.9M tokens)
@@ -105,7 +105,7 @@ Much faster than estimated 60 min!
 **Stage 1: Smoke Test** (100 steps, ~2 min)
 ```bash
 ssh tony_studio@192.168.1.195
-cd ~/phase-mamba-consciousness
+cd ~/liminal-k-ssm
 python3 kssm/train_kssm_v3.py --max-steps 100 --output-dir results/41m_stage1
 ```
 
@@ -153,7 +153,7 @@ If 41M corpus causes issues:
 
 ```bash
 ssh tony_studio@192.168.1.195
-cd ~/phase-mamba-consciousness
+cd ~/liminal-k-ssm
 
 # Restore original 22M corpus
 cp kssm/data/processed/kssm_corpus_22M_backup.jsonl \
@@ -225,7 +225,7 @@ Training script loads tokens with `mmap_mode='r'`:
 ```bash
 # On Mac Studio
 ssh tony_studio@192.168.1.195
-cd ~/phase-mamba-consciousness
+cd ~/liminal-k-ssm
 
 # Check corpus stats
 python3 kssm/process_corpus_200m.py --stats

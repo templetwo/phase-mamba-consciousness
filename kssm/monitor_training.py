@@ -569,7 +569,7 @@ def main():
 
     if args.remote:
         print(f"{Colors.YELLOW}Note: Remote monitoring not yet implemented. Use SSH + local monitor.{Colors.RESET}")
-        print(f"Example: ssh {args.remote} 'tail -f ~/phase-mamba-consciousness/{args.log_file}'")
+        print(f"Example: ssh {args.remote} 'tail -f ~/liminal-k-ssm/{args.log_file}'")
         sys.exit(1)
 
     monitor = TrainingMonitor(log_path)
